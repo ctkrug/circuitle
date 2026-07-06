@@ -8,6 +8,7 @@ import { parseBestScores, recordScore, serializeBestScores } from "./bestScore";
 import { countGates, evaluateCircuit } from "./evaluator";
 import {
   DEFAULT_GATE_LAYOUT,
+  findOverlappingGateId,
   gateInputPinPosition,
   hitTestGateBody,
   hitTestPin,
@@ -136,12 +137,24 @@ export class GameController {
       button.addEventListener("keydown", (e) => {
         if (e.key !== "Enter" && e.key !== " ") return;
         e.preventDefault();
-        const id = this.createGateId();
-        this.commitState(placeGate(this.boardState, id, type, this.nextDefaultPosition()));
-        this.synth.play("place");
+        this.tryPlaceGate(type, this.nextDefaultPosition());
       });
       this.refs.palette.appendChild(button);
     });
+  }
+
+  /** Places a gate unless it would overlap an existing one, in which case that gate shakes instead. */
+  private tryPlaceGate(type: GateType, position: GridPosition): void {
+    const blockingGateId = findOverlappingGateId(this.boardState, position);
+    if (blockingGateId) {
+      this.showStatus("can't place a gate on top of another gate");
+      this.renderer.triggerShake(blockingGateId);
+      return;
+    }
+    this.showStatus("");
+    const id = this.createGateId();
+    this.commitState(placeGate(this.boardState, id, type, position));
+    this.synth.play("place");
   }
 
   private startPaletteDrag(type: GateType, e: PointerEvent): void {
@@ -171,9 +184,7 @@ export class GameController {
     const gridX = Math.round((localX - (DEFAULT_GATE_LAYOUT.widthCells * spacing) / 2) / spacing);
     const gridY = Math.round((localY - (DEFAULT_GATE_LAYOUT.heightCells * spacing) / 2) / spacing);
 
-    const id = this.createGateId();
-    this.commitState(placeGate(this.boardState, id, drag.type, { x: gridX, y: gridY }));
-    this.synth.play("place");
+    this.tryPlaceGate(drag.type, { x: gridX, y: gridY });
   }
 
   // --- canvas pointer interaction --------------------------------------
