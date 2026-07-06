@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1d33" />
+    <meta
+      name="description"
+      content="Circuitle — a daily puzzle: build a logic-gate circuit that matches a truth table using the fewest gates."
+    />
+    <title>Circuitle — daily logic-gate puzzle</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1d33'/%3E%3Cpath d='M20 9a7 7 0 1 0 0 14' stroke='%23ffb454' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='9' r='1.6' fill='%237dd3fc'/%3E%3Ccircle cx='20' cy='23' r='1.6' fill='%237dd3fc'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <h1 class="wordmark" aria-label="Circuitle">
+          Circu<span class="wordmark-led" aria-hidden="true">i</span>tle
+        </h1>
+        <button id="mute-toggle" class="icon-button" type="button" aria-label="Mute sound" aria-pressed="false">
+          🔊
+        </button>
+      </header>
+      <main class="layout">
+        <section class="board-panel" aria-label="Circuit board">
+          <canvas id="board" role="img" aria-label="Circuit board grid, no gates placed yet"></canvas>
+        </section>
+        <aside class="rail">
+          <section class="truth-table-panel" aria-label="Today's target truth table">
+            <h2>Target</h2>
+            <div id="truth-table"></div>
+          </section>
+          <section class="gate-dock" aria-label="Gate palette">
+            <h2>Gates</h2>
+            <p class="muted">Coming in the next build — placeholder scaffold for now.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
