@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTruthTable, dailyTruthTable, enumerateInputs } from "../src/truthTable";
+import { buildTruthTable, dailyTruthTable, enumerateInputs, todayIsoDate } from "../src/truthTable";
 
 describe("enumerateInputs", () => {
   it("produces 2^n rows in ascending binary order", () => {
@@ -56,5 +56,16 @@ describe("dailyTruthTable", () => {
       expect(outputs.some((v) => v)).toBe(true);
       expect(outputs.some((v) => !v)).toBe(true);
     }
+  });
+});
+
+describe("todayIsoDate", () => {
+  it("formats a given date as YYYY-MM-DD in UTC", () => {
+    expect(todayIsoDate(new Date("2026-07-06T23:59:59Z"))).toBe("2026-07-06");
+  });
+
+  it("stays on the UTC day even when it differs from local wall-clock time", () => {
+    // 00:30 UTC is still the 1st in UTC even for callers behind UTC.
+    expect(todayIsoDate(new Date("2026-01-01T00:30:00Z"))).toBe("2026-01-01");
   });
 });
