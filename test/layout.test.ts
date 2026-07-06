@@ -3,6 +3,7 @@ import { createBoardState, placeGate } from "../src/boardState";
 import { connect } from "../src/boardState";
 import {
   DEFAULT_GATE_LAYOUT,
+  findOverlappingGateId,
   gateBounds,
   gateInputPinPosition,
   gateOutputPinPosition,
@@ -140,6 +141,34 @@ describe("resolvePinPosition", () => {
   it("returns null when the referenced gate no longer exists", () => {
     const state = createBoardState(["A"]);
     expect(resolvePinPosition(state, { kind: "gateInput", gateId: "missing", inputIndex: 0 }, 600, 400)).toBeNull();
+  });
+});
+
+describe("findOverlappingGateId", () => {
+  it("returns null when the drop position is clear", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    expect(findOverlappingGateId(state, { x: 20, y: 20 })).toBeNull();
+  });
+
+  it("finds an exact-position overlap", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 3, y: 3 });
+    expect(findOverlappingGateId(state, { x: 3, y: 3 })).toBe("g1");
+  });
+
+  it("finds a partial-overlap (not just an exact match)", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    // gate occupies grid x in [0,4), y in [0,3); a drop at (2, 1) overlaps it.
+    expect(findOverlappingGateId(state, { x: 2, y: 1 })).toBe("g1");
+  });
+
+  it("does not flag gates that are merely adjacent, not overlapping", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    // gate footprint is 4 cells wide (widthCells=4) starting at x=0, so x=4 is flush adjacent.
+    expect(findOverlappingGateId(state, { x: 4, y: 0 })).toBeNull();
   });
 });
 
