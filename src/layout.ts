@@ -1,4 +1,5 @@
 import type { BoardGate, BoardState } from "./boardState";
+import type { SignalRef } from "./types";
 import type { PinId } from "./wiring";
 
 export interface Point {
@@ -101,6 +102,43 @@ export function hitTestPin(
   }
 
   return null;
+}
+
+/** Resolves where a wire source (an input or a gate's output) currently sits, or `null` if it no longer exists. */
+export function signalSourcePosition(
+  state: BoardState,
+  ref: SignalRef,
+  canvasHeight: number,
+  layout: GateLayout = DEFAULT_GATE_LAYOUT,
+): Point | null {
+  if (ref.kind === "input") {
+    const index = state.inputNames.indexOf(ref.name);
+    return index === -1 ? null : inputPinPosition(index, state.inputNames.length, canvasHeight);
+  }
+  const gate = state.gates.find((g) => g.id === ref.id);
+  return gate ? gateOutputPinPosition(gate, layout) : null;
+}
+
+/** Resolves any pin (source or target) to its current screen position, or `null` if it no longer exists. */
+export function resolvePinPosition(
+  state: BoardState,
+  pin: PinId,
+  canvasWidth: number,
+  canvasHeight: number,
+  layout: GateLayout = DEFAULT_GATE_LAYOUT,
+): Point | null {
+  switch (pin.kind) {
+    case "input":
+      return signalSourcePosition(state, { kind: "input", name: pin.name }, canvasHeight, layout);
+    case "output":
+      return outputSinkPosition(canvasWidth, canvasHeight);
+    case "gateOutput":
+      return signalSourcePosition(state, { kind: "gate", id: pin.gateId }, canvasHeight, layout);
+    case "gateInput": {
+      const gate = state.gates.find((g) => g.id === pin.gateId);
+      return gate ? gateInputPinPosition(gate, pin.inputIndex, layout) : null;
+    }
+  }
 }
 
 /** Finds the topmost (last-placed) gate whose body contains `point`, for drag/select/delete. */
