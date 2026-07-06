@@ -161,6 +161,11 @@ body {
   touch-action: none;
 }
 
+#board:focus-visible {
+  outline: 2px solid var(--accent-support);
+  outline-offset: -2px;
+}
+
 .board-status {
   min-height: 1.25rem;
   margin: 0;

@@ -55,6 +55,7 @@ export class BoardRenderer {
   private hoveredPin: PinId | null = null;
   private selectedPin: PinId | null = null;
   private selectedGateId: string | null = null;
+  private keyboardFocusPin: PinId | null = null;
   private shake: ShakeAnim | null = null;
   private pulse: PulseAnim | null = null;
   private snap: SnapAnim | null = null;
@@ -92,6 +93,11 @@ export class BoardRenderer {
 
   setHover(pin: PinId | null): void {
     this.hoveredPin = pin;
+  }
+
+  /** The pin a keyboard user is currently stepped onto, drawn as a dashed ring distinct from `selectedPin`'s solid one. */
+  setKeyboardFocus(pin: PinId | null): void {
+    this.keyboardFocusPin = pin;
   }
 
   /** Two-cycle red shake on an invalid drop or connection attempt. */
@@ -138,6 +144,7 @@ export class BoardRenderer {
     this.drawEndpoints();
     if (this.pulse) this.drawPulse(this.pulse, now);
     this.drawSelectionHighlight();
+    this.drawKeyboardFocusRing();
   }
 
   /** A gate's on-screen bounds, adjusted for any in-flight shake or snap animation. */
@@ -302,6 +309,22 @@ export class BoardRenderer {
     ctx.lineWidth = 2;
     ctx.shadowColor = ACCENT;
     ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** A dashed ring around the pin a keyboard user has tabbed onto, so board navigation is visible without a mouse. */
+  private drawKeyboardFocusRing(): void {
+    if (!this.keyboardFocusPin) return;
+    const pos = resolvePinPosition(this.state, this.keyboardFocusPin, this.width, this.height, this.layout);
+    if (!pos) return;
+    const { ctx } = this;
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.arc(pos.x, pos.y, 13, 0, Math.PI * 2);
+    ctx.strokeStyle = ACCENT_SUPPORT;
+    ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
   }

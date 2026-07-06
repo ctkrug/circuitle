@@ -37,7 +37,12 @@
       </header>
       <main class="layout">
         <section class="board-panel" aria-label="Circuit board">
-          <canvas id="board" role="img" aria-label="Circuit board — wire the inputs through gates to the output"></canvas>
+          <canvas
+            id="board"
+            tabindex="0"
+            role="group"
+            aria-label="Circuit board. Use arrow keys to move between pins, Enter to select or connect a pin, and Delete to remove the focused gate."
+          ></canvas>
           <p id="board-status" class="board-status" role="status" aria-live="polite"></p>
         </section>
         <aside class="rail">
