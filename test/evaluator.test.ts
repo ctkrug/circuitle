@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { countGates, evaluateCircuit, matchesTruthTable } from "../src/evaluator";
 import { buildTruthTable } from "../src/truthTable";
-import type { Circuit } from "../src/types";
+import type { Circuit, Gate } from "../src/types";
 
 /** A minimal circuit computing A XOR B via NAND gates only. */
 function xorViaNand(): Circuit {
@@ -43,11 +43,66 @@ function directOr(): Circuit {
   };
 }
 
+/** A single two-input gate of `type` wired directly to A and B. */
+function directGate(type: Gate["type"]): Circuit {
+  return {
+    inputs: ["A", "B"],
+    gates: [
+      {
+        id: "g1",
+        type,
+        inputs: [
+          { kind: "input", name: "A" },
+          { kind: "input", name: "B" },
+        ],
+      },
+    ],
+    output: { kind: "gate", id: "g1" },
+  };
+}
+
 describe("evaluateCircuit", () => {
   it("evaluates a single OR gate", () => {
     const circuit = directOr();
     expect(evaluateCircuit(circuit, [false, false])).toBe(false);
     expect(evaluateCircuit(circuit, [true, false])).toBe(true);
+  });
+
+  it.each([
+    ["AND", [false, false, false, true]],
+    ["NOR", [true, false, false, false]],
+    ["XOR", [false, true, true, false]],
+    ["XNOR", [true, false, false, true]],
+  ] as const)("evaluates a single %s gate against its full truth table", (type, expected) => {
+    const circuit = directGate(type);
+    const rows: [boolean, boolean][] = [
+      [false, false],
+      [false, true],
+      [true, false],
+      [true, true],
+    ];
+    rows.forEach(([a, b], i) => {
+      expect(evaluateCircuit(circuit, [a, b])).toBe(expected[i]);
+    });
+  });
+
+  it("evaluates a NOT gate", () => {
+    const circuit: Circuit = {
+      inputs: ["A"],
+      gates: [{ id: "g1", type: "NOT", inputs: [{ kind: "input", name: "A" }] }],
+      output: { kind: "gate", id: "g1" },
+    };
+    expect(evaluateCircuit(circuit, [true])).toBe(false);
+    expect(evaluateCircuit(circuit, [false])).toBe(true);
+  });
+
+  it("throws when a signal references an input name not in the circuit", () => {
+    const circuit: Circuit = {
+      inputs: ["A"],
+      gates: [],
+      output: { kind: "input", name: "Z" },
+    };
+    expect(() => evaluateCircuit(circuit, [true])).toThrow(/unknown input/);
   });
 
   it("resolves a multi-gate NAND-only XOR circuit", () => {
