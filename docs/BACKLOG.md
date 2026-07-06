@@ -87,7 +87,7 @@ acceptance criteria — build runs implement to them, QA runs attack them.
   - An environment without canvas 2D support shows a designed fallback
     message rather than a blank page.
 
-- [ ] **Accessibility pass**
+- [x] **Accessibility pass**
   - Every board action (place a gate, wire two pins, delete a gate) has a
     keyboard-operable equivalent, not just drag-and-drop.
   - All touch targets in the gate dock and header toolbar measure ≥44px.
