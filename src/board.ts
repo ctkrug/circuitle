@@ -52,7 +52,6 @@ export class BoardRenderer {
   private width = 0;
   private height = 0;
   private state: BoardState;
-  private hoveredPin: PinId | null = null;
   private selectedPin: PinId | null = null;
   private selectedGateId: string | null = null;
   private keyboardFocusPin: PinId | null = null;
@@ -89,10 +88,6 @@ export class BoardRenderer {
   setSelection(pin: PinId | null, gateId: string | null = null): void {
     this.selectedPin = pin;
     this.selectedGateId = gateId;
-  }
-
-  setHover(pin: PinId | null): void {
-    this.hoveredPin = pin;
   }
 
   /** The pin a keyboard user is currently stepped onto, drawn as a dashed ring distinct from `selectedPin`'s solid one. */
