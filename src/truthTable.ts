@@ -35,9 +35,24 @@ export function buildTruthTable(inputCount: number, outputs: boolean[]): TruthTa
 }
 
 /**
+ * True for outputs that make a boring puzzle: constant (always-true /
+ * always-false), or an exact copy of one input variable (solvable with zero
+ * gates — just wire that input straight to the output).
+ */
+function isDegenerate(outputs: boolean[], inputCount: number): boolean {
+  if (outputs.every((v) => v) || outputs.every((v) => !v)) return true;
+
+  const assignments = enumerateInputs(inputCount);
+  for (let varIndex = 0; varIndex < inputCount; varIndex++) {
+    if (outputs.every((out, row) => out === assignments[row]![varIndex])) return true;
+  }
+  return false;
+}
+
+/**
  * Deterministically picks a truth table for a given calendar date. Rejects
- * the two degenerate cases (always-true, always-false) so every day has a
- * function actually worth building a circuit for.
+ * degenerate outputs (constant, or an exact copy of one input) so every day
+ * has a function that actually needs at least one gate to build.
  */
 export function dailyTruthTable(isoDate: string, inputCount = 3): TruthTable {
   const rng = mulberry32(hashSeed(`circuitle:${isoDate}:${inputCount}`));
@@ -46,7 +61,7 @@ export function dailyTruthTable(isoDate: string, inputCount = 3): TruthTable {
   let outputs: boolean[];
   do {
     outputs = Array.from({ length: rowCount }, () => randInt(rng, 2) === 1);
-  } while (outputs.every((v) => v) || outputs.every((v) => !v));
+  } while (isDegenerate(outputs, inputCount));
 
   return buildTruthTable(inputCount, outputs);
 }
