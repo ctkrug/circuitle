@@ -32,8 +32,9 @@ the game.
 ## Features
 
 - Daily puzzle with deterministic (date-seeded) truth tables
-- Drag-and-drop (or keyboard) gate placement and click-to-wire pins on an
-  HTML canvas, with rejected connections shown, not silently ignored
+- Every board action — place a gate, wire two pins, delete a gate — works
+  by drag-and-drop/click or entirely from the keyboard, with rejected
+  connections shown, not silently ignored
 - Live circuit simulation with per-row pass/fail feedback
 - Gate-count scoring against a computed, provably-minimal par
 - A win celebration (current travels through the circuit), synthesized
@@ -44,7 +45,6 @@ the game.
 ## Planned
 
 - Puzzle archive for past days
-- Full keyboard/touch parity for every board action
 
 ## Stack
 
@@ -69,6 +69,7 @@ left.
 npm install
 npm run dev        # local dev server
 npm test           # unit tests
+npm run coverage   # unit tests with a line-coverage report
 npm run build      # production build to dist/
 ```
 
