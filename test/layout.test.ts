@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBoardState, placeGate } from "../src/boardState";
+import { connect } from "../src/boardState";
 import {
   DEFAULT_GATE_LAYOUT,
   gateBounds,
@@ -9,6 +10,8 @@ import {
   hitTestPin,
   inputPinPosition,
   outputSinkPosition,
+  resolvePinPosition,
+  signalSourcePosition,
 } from "../src/layout";
 
 describe("gateBounds", () => {
@@ -97,6 +100,46 @@ describe("hitTestPin", () => {
     // the input pin for a single input at index 0 sits at (0, 200) on a 400-tall canvas
     expect(hitTestPin(state, { x: 0, y: 205 }, 600, 400, tightLayout)).toBeNull();
     expect(hitTestPin(state, { x: 0, y: 201 }, 600, 400, tightLayout)).toEqual({ kind: "input", name: "A" });
+  });
+});
+
+describe("signalSourcePosition", () => {
+  it("resolves an input reference to its pin position", () => {
+    const state = createBoardState(["A", "B"]);
+    expect(signalSourcePosition(state, { kind: "input", name: "B" }, 400)).toEqual(inputPinPosition(1, 2, 400));
+  });
+
+  it("resolves a gate reference to that gate's output pin", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    expect(signalSourcePosition(state, { kind: "gate", id: "g1" }, 400)).toEqual(gateOutputPinPosition(state.gates[0]!));
+  });
+
+  it("returns null for a reference to a gate that no longer exists", () => {
+    const state = createBoardState(["A"]);
+    expect(signalSourcePosition(state, { kind: "gate", id: "missing" }, 400)).toBeNull();
+  });
+});
+
+describe("resolvePinPosition", () => {
+  it("resolves every pin kind to a concrete position", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    state = connect(state, { kind: "input", name: "A" }, { kind: "gateInput", gateId: "g1", inputIndex: 0 }).state;
+
+    expect(resolvePinPosition(state, { kind: "input", name: "A" }, 600, 400)).toEqual(inputPinPosition(0, 1, 400));
+    expect(resolvePinPosition(state, { kind: "output" }, 600, 400)).toEqual(outputSinkPosition(600, 400));
+    expect(resolvePinPosition(state, { kind: "gateOutput", gateId: "g1" }, 600, 400)).toEqual(
+      gateOutputPinPosition(state.gates[0]!),
+    );
+    expect(resolvePinPosition(state, { kind: "gateInput", gateId: "g1", inputIndex: 0 }, 600, 400)).toEqual(
+      gateInputPinPosition(state.gates[0]!, 0),
+    );
+  });
+
+  it("returns null when the referenced gate no longer exists", () => {
+    const state = createBoardState(["A"]);
+    expect(resolvePinPosition(state, { kind: "gateInput", gateId: "missing", inputIndex: 0 }, 600, 400)).toBeNull();
   });
 });
 
