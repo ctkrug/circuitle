@@ -95,6 +95,12 @@ describe("hitTestPin", () => {
     expect(hitTestPin(state, { x: 300, y: 300 }, 600, 400)).toBeNull();
   });
 
+  it("returns null when a gate is placed but the point misses all of its pins", () => {
+    let state = createBoardState(["A", "B"]);
+    state = placeGate(state, "g1", "AND", { x: 0, y: 0 });
+    expect(hitTestPin(state, { x: 300, y: 350 }, 600, 400)).toBeNull();
+  });
+
   it("respects the configured hit radius boundary", () => {
     const state = createBoardState(["A"]);
     const tightLayout = { ...DEFAULT_GATE_LAYOUT, pinHitRadius: 2 };
