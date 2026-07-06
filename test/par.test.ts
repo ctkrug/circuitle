@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { buildTruthTable, dailyTruthTable, enumerateInputs } from "../src/truthTable";
 import { computePar } from "../src/par";
@@ -68,5 +69,28 @@ describe("computePar", () => {
       expect(par).toBeGreaterThan(0);
       expect(par).toBeLessThanOrEqual(8);
     }
+  });
+
+  it("is 0 if and only if some input column exactly matches the output, for any random 3-input table", () => {
+    fc.assert(
+      fc.property(fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }), (outputs) => {
+        const table = buildTruthTable(3, outputs);
+        const isExactCopyOfSomeInput = table.inputNames.some((_, varIndex) =>
+          table.rows.every((row) => row.output === row.inputs[varIndex]),
+        );
+        return (computePar(table) === 0) === isExactCopyOfSomeInput;
+      }),
+    );
+  });
+
+  it("is always within [0, maxGates] and deterministic, for any random 3-input table", () => {
+    fc.assert(
+      fc.property(fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }), (outputs) => {
+        const table = buildTruthTable(3, outputs);
+        const first = computePar(table);
+        const second = computePar(table);
+        return first === second && first >= 0 && first <= 10;
+      }),
+    );
   });
 });
