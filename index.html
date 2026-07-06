@@ -28,13 +28,17 @@
         <h1 class="wordmark" aria-label="Circuitle">
           Circu<span class="wordmark-led" aria-hidden="true">i</span>tle
         </h1>
-        <button id="mute-toggle" class="icon-button" type="button" aria-label="Mute sound" aria-pressed="false">
-          🔊
-        </button>
+        <div class="header-controls">
+          <span id="best-score" class="best-score muted" aria-live="polite"></span>
+          <button id="mute-toggle" class="icon-button" type="button" aria-label="Mute sound" aria-pressed="false">
+            🔊
+          </button>
+        </div>
       </header>
       <main class="layout">
         <section class="board-panel" aria-label="Circuit board">
-          <canvas id="board" role="img" aria-label="Circuit board grid, no gates placed yet"></canvas>
+          <canvas id="board" role="img" aria-label="Circuit board — wire the inputs through gates to the output"></canvas>
+          <p id="board-status" class="board-status" role="status" aria-live="polite"></p>
         </section>
         <aside class="rail">
           <section class="truth-table-panel" aria-label="Today's target truth table">
@@ -43,10 +47,22 @@
           </section>
           <section class="gate-dock" aria-label="Gate palette">
             <h2>Gates</h2>
-            <p class="muted">Coming in the next build — placeholder scaffold for now.</p>
+            <div id="gate-palette" class="gate-palette"></div>
           </section>
         </aside>
       </main>
+      <div id="win-overlay" class="win-overlay" hidden>
+        <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="win-title">
+          <h2 id="win-title">Solved!</h2>
+          <p class="win-stats"><span id="win-gate-count">0</span> gates <span id="win-delta" class="win-delta"></span></p>
+          <p class="muted">Par: <span id="win-par">0</span></p>
+          <div class="win-actions">
+            <button id="win-share" class="btn btn-accent" type="button">Share</button>
+            <button id="win-dismiss" class="btn" type="button">Keep tinkering</button>
+          </div>
+        </div>
+      </div>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     </div>
     <script type="module" src="./src/main.ts"></script>
   </body>
