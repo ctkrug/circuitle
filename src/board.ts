@@ -1,16 +1,8 @@
 import type { BoardGate, BoardState } from "./boardState";
+import type { SignalRef } from "./types";
 import { easeOutCubic } from "./easing";
-import {
-  DEFAULT_GATE_LAYOUT,
-  gateBounds,
-  gateInputPinPosition,
-  gateOutputPinPosition,
-  inputPinPosition,
-  outputSinkPosition,
-  resolvePinPosition,
-  signalSourcePosition,
-} from "./layout";
-import type { GateLayout, Point } from "./layout";
+import { DEFAULT_GATE_LAYOUT, gateBounds, inputPinPosition, outputSinkPosition, resolvePinPosition } from "./layout";
+import type { Bounds, GateLayout, Point } from "./layout";
 import type { PinId } from "./wiring";
 
 const GRID_SPACING = DEFAULT_GATE_LAYOUT.gridSpacing;
@@ -27,6 +19,7 @@ const DANGER = "#f87171";
 const SHAKE_DURATION_MS = 240;
 const SHAKE_AMPLITUDE_PX = 6;
 const PULSE_DURATION_MS = 320;
+const SNAP_DURATION_MS = 90;
 
 interface ShakeAnim {
   gateId: string;
@@ -34,6 +27,13 @@ interface ShakeAnim {
 }
 
 interface PulseAnim {
+  from: Point;
+  to: Point;
+  start: number;
+}
+
+interface SnapAnim {
+  gateId: string;
   from: Point;
   to: Point;
   start: number;
@@ -57,6 +57,7 @@ export class BoardRenderer {
   private selectedGateId: string | null = null;
   private shake: ShakeAnim | null = null;
   private pulse: PulseAnim | null = null;
+  private snap: SnapAnim | null = null;
   private reducedMotion: boolean;
   private rafHandle = 0;
 
@@ -105,6 +106,12 @@ export class BoardRenderer {
     this.pulse = { from, to, start: performance.now() };
   }
 
+  /** Eases a released gate from its drop point to its snapped grid position. */
+  triggerSnap(gateId: string, from: Point, to: Point): void {
+    if (this.reducedMotion) return;
+    this.snap = { gateId, from, to, start: performance.now() };
+  }
+
   destroy(): void {
     cancelAnimationFrame(this.rafHandle);
   }
@@ -124,12 +131,50 @@ export class BoardRenderer {
     const now = performance.now();
     if (this.shake && now - this.shake.start > SHAKE_DURATION_MS) this.shake = null;
     if (this.pulse && now - this.pulse.start > PULSE_DURATION_MS) this.pulse = null;
+    if (this.snap && now - this.snap.start > SNAP_DURATION_MS) this.snap = null;
 
-    this.drawWires();
+    this.drawWires(now);
     for (const gate of this.state.gates) this.drawGate(gate, now);
     this.drawEndpoints();
     if (this.pulse) this.drawPulse(this.pulse, now);
     this.drawSelectionHighlight();
+  }
+
+  /** A gate's on-screen bounds, adjusted for any in-flight shake or snap animation. */
+  private effectiveBounds(gate: BoardGate, now: number): Bounds {
+    const bounds = gateBounds(gate, this.layout);
+    if (this.snap && this.snap.gateId === gate.id) {
+      const t = easeOutCubic(Math.min(1, (now - this.snap.start) / SNAP_DURATION_MS));
+      return {
+        ...bounds,
+        x: this.snap.from.x + (this.snap.to.x - this.snap.from.x) * t,
+        y: this.snap.from.y + (this.snap.to.y - this.snap.from.y) * t,
+      };
+    }
+    if (this.shake && this.shake.gateId === gate.id) {
+      const t = (now - this.shake.start) / SHAKE_DURATION_MS;
+      const dx = Math.sin(t * Math.PI * 4) * SHAKE_AMPLITUDE_PX * (1 - t);
+      return { ...bounds, x: bounds.x + dx };
+    }
+    return bounds;
+  }
+
+  private pinPositionFromBounds(bounds: Bounds, arity: number, index: number | "output"): Point {
+    if (index === "output") {
+      return { x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 };
+    }
+    const fraction = arity === 1 ? 0.5 : index === 0 ? 0.25 : 0.75;
+    return { x: bounds.x, y: bounds.y + bounds.height * fraction };
+  }
+
+  private effectiveSourcePosition(ref: SignalRef, now: number): Point | null {
+    if (ref.kind === "input") {
+      const index = this.state.inputNames.indexOf(ref.name);
+      return index === -1 ? null : inputPinPosition(index, this.state.inputNames.length, this.height);
+    }
+    const gate = this.state.gates.find((g) => g.id === ref.id);
+    if (!gate) return null;
+    return this.pinPositionFromBounds(this.effectiveBounds(gate, now), gate.inputs.length, "output");
   }
 
   private drawGrid(): void {
@@ -148,18 +193,19 @@ export class BoardRenderer {
     ctx.stroke();
   }
 
-  private drawWires(): void {
+  private drawWires(now: number): void {
     for (const gate of this.state.gates) {
+      const targetBounds = this.effectiveBounds(gate, now);
       gate.inputs.forEach((ref, i) => {
         if (!ref) return;
-        const from = signalSourcePosition(this.state, ref, this.height, this.layout);
+        const from = this.effectiveSourcePosition(ref, now);
         if (!from) return;
-        const to = gateInputPinPosition(gate, i, this.layout);
+        const to = this.pinPositionFromBounds(targetBounds, gate.inputs.length, i);
         this.drawWireSegment(from, to);
       });
     }
     if (this.state.output) {
-      const from = signalSourcePosition(this.state, this.state.output, this.height, this.layout);
+      const from = this.effectiveSourcePosition(this.state.output, now);
       if (from) this.drawWireSegment(from, outputSinkPosition(this.width, this.height));
     }
   }
@@ -181,19 +227,13 @@ export class BoardRenderer {
 
   private drawGate(gate: BoardGate, now: number): void {
     const { ctx } = this;
-    const bounds = gateBounds(gate, this.layout);
+    const bounds = this.effectiveBounds(gate, now);
     const isShaking = this.shake?.gateId === gate.id;
     const isSelected = this.selectedGateId === gate.id;
 
-    let xOffset = 0;
-    if (isShaking && this.shake) {
-      const t = (now - this.shake.start) / SHAKE_DURATION_MS;
-      xOffset = Math.sin(t * Math.PI * 4) * SHAKE_AMPLITUDE_PX * (1 - t);
-    }
-
     ctx.save();
     ctx.beginPath();
-    this.roundedRectPath(bounds.x + xOffset, bounds.y, bounds.width, bounds.height, 6);
+    this.roundedRectPath(bounds.x, bounds.y, bounds.width, bounds.height, 6);
     ctx.fillStyle = SURFACE_COLOR;
     ctx.fill();
     ctx.lineWidth = isSelected ? 2 : 1;
@@ -204,15 +244,15 @@ export class BoardRenderer {
     ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(gate.type, bounds.x + xOffset + bounds.width / 2, bounds.y + bounds.height / 2);
+    ctx.fillText(gate.type, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
     ctx.restore();
 
     gate.inputs.forEach((ref, i) => {
-      const pos = gateInputPinPosition(gate, i, this.layout);
-      this.drawPin({ x: pos.x + xOffset, y: pos.y }, ref ? ACCENT_SUPPORT : MUTED_COLOR);
+      const pos = this.pinPositionFromBounds(bounds, gate.inputs.length, i);
+      this.drawPin(pos, ref ? ACCENT_SUPPORT : MUTED_COLOR);
     });
-    const outPos = gateOutputPinPosition(gate, this.layout);
-    this.drawPin({ x: outPos.x + xOffset, y: outPos.y }, ACCENT);
+    const outPos = this.pinPositionFromBounds(bounds, gate.inputs.length, "output");
+    this.drawPin(outPos, ACCENT);
   }
 
   private drawEndpoints(): void {
