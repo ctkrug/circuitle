@@ -29,15 +29,22 @@ the game.
    Match every row and you've solved it — your score is the gate count.
 4. Share your result: gate count vs. par, without revealing your circuit.
 
-## Planned features
+## Features
 
 - Daily puzzle with deterministic (date-seeded) truth tables
-- Drag-and-drop gate placement and wiring on an HTML canvas
+- Drag-and-drop (or keyboard) gate placement and click-to-wire pins on an
+  HTML canvas, with rejected connections shown, not silently ignored
 - Live circuit simulation with per-row pass/fail feedback
-- Gate-count scoring against a computed par (a known-good minimal solution)
-- Shareable result summary (gate count + attempts, no spoilers)
+- Gate-count scoring against a computed, provably-minimal par
+- A win celebration (current travels through the circuit), synthesized
+  WebAudio SFX with a persistent mute toggle, and a shareable result
+  summary copied to the clipboard (gate count vs. par, no spoilers)
+- Local best-score tracking per day (no account required)
+
+## Planned
+
 - Puzzle archive for past days
-- Local best-score tracking (no account required)
+- Full keyboard/touch parity for every board action
 
 ## Stack
 
@@ -50,8 +57,11 @@ Ships as a static, self-contained site — no backend required.
 
 ## Status
 
-Early scaffold. See [`docs/VISION.md`](docs/VISION.md) for the full design
-and [`docs/BACKLOG.md`](docs/BACKLOG.md) for the build plan.
+The core solve loop is playable end-to-end: place gates, wire them, watch
+the truth table update live, and win. See [`docs/VISION.md`](docs/VISION.md)
+for the full design, [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how
+the code is organized, and [`docs/BACKLOG.md`](docs/BACKLOG.md) for what's
+left.
 
 ## Development
 
