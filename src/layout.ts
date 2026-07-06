@@ -141,6 +141,26 @@ export function resolvePinPosition(
   }
 }
 
+function boundsOverlap(a: Bounds, b: Bounds): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+/** Finds a gate whose body would overlap a new gate dropped at `position`, or `null` if the spot is clear. */
+export function findOverlappingGateId(
+  state: BoardState,
+  position: { x: number; y: number },
+  layout: GateLayout = DEFAULT_GATE_LAYOUT,
+): string | null {
+  const candidate: Bounds = {
+    x: position.x * layout.gridSpacing,
+    y: position.y * layout.gridSpacing,
+    width: layout.widthCells * layout.gridSpacing,
+    height: layout.heightCells * layout.gridSpacing,
+  };
+  const hit = state.gates.find((gate) => boundsOverlap(candidate, gateBounds(gate, layout)));
+  return hit ? hit.id : null;
+}
+
 /** Finds the topmost (last-placed) gate whose body contains `point`, for drag/select/delete. */
 export function hitTestGateBody(state: BoardState, point: Point, layout: GateLayout = DEFAULT_GATE_LAYOUT): string | null {
   for (let i = state.gates.length - 1; i >= 0; i--) {
