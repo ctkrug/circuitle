@@ -8,6 +8,7 @@ import { parseBestScores, recordScore, serializeBestScores } from "./bestScore";
 import { countGates, evaluateCircuit } from "./evaluator";
 import {
   DEFAULT_GATE_LAYOUT,
+  allPinIds,
   findOverlappingGateId,
   gateInputPinPosition,
   hitTestGateBody,
@@ -80,6 +81,7 @@ export class GameController {
   private bestScores: BestScores;
   private selectedPin: PinId | null = null;
   private selectedGateId: string | null = null;
+  private keyboardFocusIndex: number | null = null;
   private movingGate: MovingGate | null = null;
   private paletteDrag: PaletteDrag | null = null;
   private previousRowResults: boolean[] | null = null;
@@ -109,6 +111,8 @@ export class GameController {
     window.addEventListener("pointermove", this.onPointerMove);
     window.addEventListener("pointerup", this.onPointerUp);
     window.addEventListener("keydown", this.onKeyDown);
+    refs.canvas.addEventListener("focus", this.onCanvasFocus);
+    refs.canvas.addEventListener("blur", this.onCanvasBlur);
     refs.winShare.addEventListener("click", () => this.handleShare());
     refs.winDismiss.addEventListener("click", () => this.hideWinOverlay());
 
@@ -256,12 +260,100 @@ export class GameController {
     if (this.paletteDrag) this.finishPaletteDrag(e);
   };
 
+  private readonly onCanvasFocus = (): void => {
+    // Only announce/ring on a keyboard-initiated focus (Tab) — a mouse click
+    // also focuses the now-tabbable canvas, and shouldn't surface keyboard UI.
+    if (!this.refs.canvas.matches(":focus-visible")) return;
+    const pins = allPinIds(this.boardState);
+    const index = this.keyboardFocusIndex !== null && this.keyboardFocusIndex < pins.length ? this.keyboardFocusIndex : 0;
+    this.keyboardFocusIndex = index;
+    const pin = pins[index];
+    if (!pin) return;
+    this.renderer.setKeyboardFocus(pin);
+    this.showStatus(`focused ${this.describePin(pin)}`);
+  };
+
+  private readonly onCanvasBlur = (): void => {
+    this.keyboardFocusIndex = null;
+    this.renderer.setKeyboardFocus(null);
+  };
+
+  /** Every pin belonging to a gate is also that gate's keyboard delete target. */
+  private gateIdForPin(pin: PinId): string | null {
+    return pin.kind === "gateOutput" || pin.kind === "gateInput" ? pin.gateId : null;
+  }
+
+  private deleteGate(gateId: string): void {
+    this.selectedGateId = null;
+    this.keyboardFocusIndex = null;
+    this.renderer.setSelection(null, null);
+    this.renderer.setKeyboardFocus(null);
+    this.commitState(removeGate(this.boardState, gateId));
+    this.showStatus("gate removed");
+  }
+
+  /** Describes a pin for the aria-live status region, so keyboard/screen-reader users hear what they're on. */
+  private describePin(pin: PinId): string {
+    switch (pin.kind) {
+      case "input":
+        return `input ${pin.name}`;
+      case "output":
+        return "circuit output";
+      case "gateOutput": {
+        const gate = this.boardState.gates.find((g) => g.id === pin.gateId);
+        return gate ? `${gate.type} gate output` : "gate output";
+      }
+      case "gateInput": {
+        const gate = this.boardState.gates.find((g) => g.id === pin.gateId);
+        return `${gate ? `${gate.type} gate` : "gate"} input ${pin.inputIndex + 1}`;
+      }
+    }
+  }
+
+  /** Arrow-key/Enter/Delete handling for the keyboard-only wiring path — only active while the canvas has focus. */
+  private handleBoardKeyDown(e: KeyboardEvent): boolean {
+    const pins = allPinIds(this.boardState);
+    if (pins.length === 0) return false;
+
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1;
+      const current = this.keyboardFocusIndex ?? (step === 1 ? -1 : 0);
+      const next = (current + step + pins.length) % pins.length;
+      this.keyboardFocusIndex = next;
+      this.renderer.setKeyboardFocus(pins[next]!);
+      this.showStatus(`focused ${this.describePin(pins[next]!)}`);
+      return true;
+    }
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const index = this.keyboardFocusIndex ?? 0;
+      this.keyboardFocusIndex = index;
+      const pin = pins[index];
+      if (!pin) return true;
+      this.renderer.setKeyboardFocus(pin);
+      this.handlePinClick(pin);
+      return true;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      const pin = this.keyboardFocusIndex !== null ? pins[this.keyboardFocusIndex] : null;
+      const gateId = (pin && this.gateIdForPin(pin)) ?? this.selectedGateId;
+      if (!gateId) return false;
+      e.preventDefault();
+      this.deleteGate(gateId);
+      return true;
+    }
+
+    return false;
+  }
+
   private readonly onKeyDown = (e: KeyboardEvent): void => {
+    if (document.activeElement === this.refs.canvas && this.handleBoardKeyDown(e)) return;
+
     if ((e.key === "Delete" || e.key === "Backspace") && this.selectedGateId) {
-      const gateId = this.selectedGateId;
-      this.selectedGateId = null;
-      this.renderer.setSelection(null, null);
-      this.commitState(removeGate(this.boardState, gateId));
+      this.deleteGate(this.selectedGateId);
       return;
     }
     if (e.key === "Escape") {
@@ -276,6 +368,7 @@ export class GameController {
       this.selectedPin = pin;
       this.selectedGateId = null;
       this.renderer.setSelection(pin, null);
+      this.showStatus(`${this.describePin(pin)} selected — choose a second pin to connect`);
       return;
     }
 
@@ -283,7 +376,10 @@ export class GameController {
     this.selectedPin = null;
     this.renderer.setSelection(null, null);
 
-    if (JSON.stringify(first) === JSON.stringify(pin)) return;
+    if (JSON.stringify(first) === JSON.stringify(pin)) {
+      this.showStatus("");
+      return;
+    }
 
     const result = connectPins(this.boardState, first, pin);
     if (result.error) {
@@ -293,7 +389,7 @@ export class GameController {
       return;
     }
 
-    this.showStatus("");
+    this.showStatus(`connected ${this.describePin(first)} to ${this.describePin(pin)}`);
     const rect = this.refs.canvas.getBoundingClientRect();
     const fromPos = resolvePinPosition(this.boardState, isSourcePin(first) ? first : pin, rect.width, rect.height);
     const toPos = resolvePinPosition(this.boardState, isSourcePin(first) ? pin : first, rect.width, rect.height);
