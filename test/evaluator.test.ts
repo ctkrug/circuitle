@@ -105,6 +105,15 @@ describe("evaluateCircuit", () => {
     expect(() => evaluateCircuit(circuit, [true])).toThrow(/unknown input/);
   });
 
+  it("throws when a signal references a gate id not in the circuit", () => {
+    const circuit: Circuit = {
+      inputs: ["A"],
+      gates: [],
+      output: { kind: "gate", id: "missing-gate" },
+    };
+    expect(() => evaluateCircuit(circuit, [true])).toThrow(/unknown gate/);
+  });
+
   it("resolves a multi-gate NAND-only XOR circuit", () => {
     const circuit = xorViaNand();
     expect(evaluateCircuit(circuit, [false, false])).toBe(false);
