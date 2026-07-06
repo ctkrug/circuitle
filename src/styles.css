@@ -358,6 +358,12 @@ table.truth-table tbody tr.row-fail td:last-child {
   color: var(--accent-support);
 }
 
+.win-share-text {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  margin-top: var(--space-1);
+}
+
 .win-actions {
   display: flex;
   gap: var(--space-2);

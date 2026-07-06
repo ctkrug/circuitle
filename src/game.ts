@@ -41,6 +41,7 @@ export interface GameRefs {
   winOverlay: HTMLElement;
   winGateCount: HTMLElement;
   winPar: HTMLElement;
+  winShareText: HTMLElement;
   winDelta: HTMLElement;
   winShare: HTMLButtonElement;
   winDismiss: HTMLButtonElement;
@@ -397,6 +398,7 @@ export class GameController {
     this.refs.winPar.textContent = String(score.par);
     this.refs.winDelta.textContent =
       score.delta === 0 ? "— exactly par" : score.delta > 0 ? `— ${score.delta} under par` : `— ${Math.abs(score.delta)} over par`;
+    this.refs.winShareText.textContent = formatShareText(this.todayIso, score);
     this.refs.winOverlay.hidden = false;
   }
 

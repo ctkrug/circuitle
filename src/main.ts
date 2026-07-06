@@ -29,6 +29,7 @@ function main(): void {
     winOverlay: requireElement("win-overlay"),
     winGateCount: requireElement("win-gate-count"),
     winPar: requireElement("win-par"),
+    winShareText: requireElement("win-share-text"),
     winDelta: requireElement("win-delta"),
     winShare: requireElement("win-share"),
     winDismiss: requireElement("win-dismiss"),
