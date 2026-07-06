@@ -542,12 +542,16 @@ export class GameController {
   // --- misc DOM ---------------------------------------------------------
 
   private renderTruthTable(rowResults: boolean[]): void {
-    const headerCells = [...this.table.inputNames, "OUT", ""].map((name) => `<th>${name}</th>`).join("");
+    // The last header stays a short visible glyph, not an empty cell — every
+    // column needs a discernible name for a screen reader, and the row cells
+    // below still carry the full "pass"/"fail" word for assistive tech.
+    const headerCells = [...this.table.inputNames, "OUT", "✓"].map((name) => `<th>${name}</th>`).join("");
     const rows = this.table.rows
       .map((row, i) => {
         const inputCells = row.inputs.map((v) => `<td>${v ? 1 : 0}</td>`).join("");
         const passed = rowResults[i] ?? false;
-        return `<tr class="${passed ? "row-pass" : "row-fail"}">${inputCells}<td>${row.output ? 1 : 0}</td><td aria-hidden="true">${passed ? "✓" : "✕"}</td></tr>`;
+        const statusCell = `<td><span aria-hidden="true">${passed ? "✓" : "✕"}</span><span class="sr-only">${passed ? "pass" : "fail"}</span></td>`;
+        return `<tr class="${passed ? "row-pass" : "row-fail"}">${inputCells}<td>${row.output ? 1 : 0}</td>${statusCell}</tr>`;
       })
       .join("");
 
