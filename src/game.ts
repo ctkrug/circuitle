@@ -168,6 +168,7 @@ export class GameController {
     const ghost = document.createElement("div");
     ghost.className = "gate-ghost";
     ghost.textContent = type;
+    ghost.setAttribute("aria-hidden", "true");
     ghost.style.left = `${e.clientX}px`;
     ghost.style.top = `${e.clientY}px`;
     document.body.appendChild(ghost);
