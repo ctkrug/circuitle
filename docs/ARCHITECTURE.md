@@ -40,7 +40,10 @@ src/
                   testing a point against pins/gate bodies, and resolving
                   any PinId or SignalRef back to a screen position. Both
                   the renderer and the interaction layer read from here so
-                  they can never disagree about where a pin is.
+                  they can never disagree about where a pin is. allPinIds()
+                  gives every pin a stable reading order — the sequence a
+                  keyboard user tabs/arrows through, since there's no DOM
+                  element per pin for the browser's native tab order.
   easing.ts       easeOutCubic/lerp/snapToGrid — shared by the drag-snap
                   and win-travel animations.
   bestScore.ts    Parse/record/serialize the localStorage best-score blob,
@@ -54,13 +57,26 @@ src/
                   from a BoardState onto <canvas>, and drives three short
                   canvas-only animations (invalid-drop shake, wire-connect
                   pulse, drag-release snap) via a continuous rAF loop that
-                  respects prefers-reduced-motion.
+                  respects prefers-reduced-motion. Also draws a dashed
+                  keyboard-focus ring (setKeyboardFocus), kept visually
+                  distinct from the solid ring around a mouse/keyboard-
+                  selected pin (setSelection).
   game.ts         GameController: owns the live BoardState and every DOM
                   event handler — palette drag/keyboard placement, pin-
                   click wiring, gate drag-to-move, delete/escape, live
                   evaluation, the win overlay and its topological
                   "current travels through the circuit" celebration,
                   share-to-clipboard, and mute/best-score persistence.
+                  Every board action also has a keyboard path: the canvas
+                  is tabbable, arrow keys step through layout.allPinIds()
+                  announcing each pin via the aria-live #board-status
+                  region, Enter/Space reuses the same handlePinClick as a
+                  mouse click (so selecting/connecting is one code path
+                  regardless of input device), and Delete/Backspace removes
+                  the gate the focused pin belongs to. The focus ring only
+                  appears on an actual :focus-visible (Tab) — a mouse click
+                  also focuses the now-tabbable canvas but shouldn't surface
+                  keyboard-only UI.
   main.ts         Bootstrap only: looks up DOM elements, falls back to a
                   designed message if canvas 2D is unavailable, and hands
                   off to GameController.
@@ -100,6 +116,7 @@ share any sub-structure. `test/par.test.ts` has a worked example.
 npm install
 npm run dev         # local dev server
 npm test            # unit tests (vitest, environment: node — no DOM)
+npm run coverage    # unit tests with a v8 line-coverage report
 npm run typecheck   # tsc --noEmit
 npm run lint        # eslint
 npm run build       # production build to dist/ (static, base-path relative)
@@ -107,7 +124,7 @@ npm run build       # production build to dist/ (static, base-path relative)
 
 Everything under `boardState.ts`/`wiring.ts`/`layout.ts`/`par.ts`/
 `bestScore.ts`/`audio.ts`/`easing.ts`/`evaluator.ts`/`scorer.ts`/
-`truthTable.ts`/`rng.ts` is unit tested. `board.ts`/`game.ts`/`main.ts` are
-DOM/canvas glue verified by running the app in a real browser (Playwright)
-rather than by unit test, since vitest here runs in a DOM-less `node`
-environment.
+`truthTable.ts`/`rng.ts` is unit tested (100% line coverage as of the last
+QA pass). `board.ts`/`game.ts`/`main.ts` are DOM/canvas glue verified by
+running the app in a real browser (Playwright) rather than by unit test,
+since vitest here runs in a DOM-less `node` environment.
