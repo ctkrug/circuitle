@@ -53,6 +53,14 @@ describe("computePar", () => {
     expect(computePar(table)).toBeGreaterThan(0);
   });
 
+  it("falls back to maxGates when the target isn't reachable within budget", () => {
+    // XOR needs at least 1 gate, so a budget of 0 can never finalize it —
+    // the search should give up and report the budget itself, not throw or
+    // return an inaccurate result silently.
+    const table = tableFromFn(3, (b) => b[0]! !== b[1]!);
+    expect(computePar(table, 0)).toBe(0);
+  });
+
   it("stays within the daily puzzle's par ceiling of 8 for a 3-input table", () => {
     for (let day = 1; day <= 20; day++) {
       const date = `2026-03-${String(day).padStart(2, "0")}`;
