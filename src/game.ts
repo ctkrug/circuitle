@@ -88,6 +88,7 @@ export class GameController {
   private solvedPreviously = false;
   private toastTimer = 0;
   private gateCounter = 0;
+  private previouslyFocused: HTMLElement | null = null;
 
   constructor(refs: GameRefs) {
     this.refs = refs;
@@ -496,11 +497,32 @@ export class GameController {
       score.delta === 0 ? "— exactly par" : score.delta > 0 ? `— ${score.delta} under par` : `— ${Math.abs(score.delta)} over par`;
     this.refs.winShareText.textContent = formatShareText(this.todayIso, score);
     this.refs.winOverlay.hidden = false;
+
+    this.previouslyFocused = document.activeElement as HTMLElement | null;
+    this.refs.winShare.focus();
+    document.addEventListener("keydown", this.onWinOverlayKeyDown);
   }
 
   private hideWinOverlay(): void {
     this.refs.winOverlay.hidden = true;
+    document.removeEventListener("keydown", this.onWinOverlayKeyDown);
+    this.previouslyFocused?.focus();
+    this.previouslyFocused = null;
   }
+
+  /** Traps Tab within the win dialog's two buttons and lets Escape dismiss it, per the WAI-ARIA dialog pattern. */
+  private readonly onWinOverlayKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === "Escape") {
+      this.hideWinOverlay();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const focusable = [this.refs.winShare, this.refs.winDismiss];
+    const currentIndex = focusable.indexOf(document.activeElement as HTMLButtonElement);
+    e.preventDefault();
+    const nextIndex = (currentIndex + (e.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
+    focusable[nextIndex]!.focus();
+  };
 
   private handleShare(): void {
     const circuit = toCircuit(this.boardState);
