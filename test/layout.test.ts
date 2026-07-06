@@ -3,6 +3,7 @@ import { createBoardState, placeGate } from "../src/boardState";
 import { connect } from "../src/boardState";
 import {
   DEFAULT_GATE_LAYOUT,
+  allPinIds,
   findOverlappingGateId,
   gateBounds,
   gateInputPinPosition,
@@ -196,5 +197,32 @@ describe("hitTestGateBody", () => {
     state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
     state = placeGate(state, "g2", "NOT", { x: 0, y: 0 });
     expect(hitTestGateBody(state, { x: 10, y: 10 })).toBe("g2");
+  });
+});
+
+describe("allPinIds", () => {
+  it("lists inputs, then the output sink, for an empty board", () => {
+    const state = createBoardState(["A", "B"]);
+    expect(allPinIds(state)).toEqual([
+      { kind: "input", name: "A" },
+      { kind: "input", name: "B" },
+      { kind: "output" },
+    ]);
+  });
+
+  it("appends each gate's output pin followed by its input pins, in placement order", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    state = placeGate(state, "g2", "AND", { x: 5, y: 0 });
+
+    expect(allPinIds(state)).toEqual([
+      { kind: "input", name: "A" },
+      { kind: "output" },
+      { kind: "gateOutput", gateId: "g1" },
+      { kind: "gateInput", gateId: "g1", inputIndex: 0 },
+      { kind: "gateOutput", gateId: "g2" },
+      { kind: "gateInput", gateId: "g2", inputIndex: 0 },
+      { kind: "gateInput", gateId: "g2", inputIndex: 1 },
+    ]);
   });
 });

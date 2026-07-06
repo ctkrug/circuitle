@@ -161,6 +161,24 @@ export function findOverlappingGateId(
   return hit ? hit.id : null;
 }
 
+/**
+ * Every pin on the board, in a stable reading order (circuit inputs, the
+ * output sink, then each gate's output followed by its inputs) — the
+ * sequence a keyboard user tabs through, since there is no DOM element per
+ * pin to give the browser a native tab order.
+ */
+export function allPinIds(state: BoardState): PinId[] {
+  const pins: PinId[] = state.inputNames.map((name) => ({ kind: "input", name }));
+  pins.push({ kind: "output" });
+  for (const gate of state.gates) {
+    pins.push({ kind: "gateOutput", gateId: gate.id });
+    for (let i = 0; i < gate.inputs.length; i++) {
+      pins.push({ kind: "gateInput", gateId: gate.id, inputIndex: i });
+    }
+  }
+  return pins;
+}
+
 /** Finds the topmost (last-placed) gate whose body contains `point`, for drag/select/delete. */
 export function hitTestGateBody(state: BoardState, point: Point, layout: GateLayout = DEFAULT_GATE_LAYOUT): string | null {
   for (let i = state.gates.length - 1; i >= 0; i--) {
