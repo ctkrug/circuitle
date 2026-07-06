@@ -152,7 +152,7 @@ export class GameController {
   private tryPlaceGate(type: GateType, position: GridPosition): void {
     const blockingGateId = findOverlappingGateId(this.boardState, position);
     if (blockingGateId) {
-      this.showStatus("can't place a gate on top of another gate");
+      this.showStatus("can't place a gate on top of another gate", true);
       this.renderer.triggerShake(blockingGateId);
       return;
     }
@@ -383,7 +383,7 @@ export class GameController {
 
     const result = connectPins(this.boardState, first, pin);
     if (result.error) {
-      this.showStatus(result.error);
+      this.showStatus(result.error, true);
       const shakeTarget = pin.kind === "gateInput" ? pin.gateId : first.kind === "gateInput" ? first.gateId : null;
       if (shakeTarget) this.renderer.triggerShake(shakeTarget);
       return;
@@ -537,8 +537,9 @@ export class GameController {
     `;
   }
 
-  private showStatus(message: string): void {
+  private showStatus(message: string, isError = false): void {
     this.refs.status.textContent = message;
+    this.refs.status.classList.toggle("is-error", isError);
   }
 
   private showToast(message: string): void {
