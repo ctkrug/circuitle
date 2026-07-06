@@ -16,7 +16,7 @@ export function scoreCircuit(gateCount: number, par: number): Score {
 
 /** Renders a score as a short, spoiler-free share string, Wordle-style. */
 export function formatShareText(isoDate: string, score: Score): string {
-  const sign = score.delta > 0 ? "-" : score.delta < 0 ? "+" : "";
+  const sign = score.delta > 0 ? "+" : score.delta < 0 ? "-" : "";
   const relative = score.delta === 0 ? "par" : `${sign}${Math.abs(score.delta)}`;
   return `Circuitle ${isoDate} — ${score.gateCount} gates (${relative})`;
 }
