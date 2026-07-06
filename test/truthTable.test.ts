@@ -43,4 +43,18 @@ describe("dailyTruthTable", () => {
     const b = dailyTruthTable("2026-07-07");
     expect(a).not.toEqual(b);
   });
+
+  it("never picks an output that is a zero-gate copy of a single input", () => {
+    for (let day = 1; day <= 28; day++) {
+      const date = `2026-01-${String(day).padStart(2, "0")}`;
+      const table = dailyTruthTable(date);
+      const outputs = table.rows.map((r) => r.output);
+      for (let varIndex = 0; varIndex < table.inputNames.length; varIndex++) {
+        const isCopyOfInput = table.rows.every((row) => row.output === row.inputs[varIndex]);
+        expect(isCopyOfInput).toBe(false);
+      }
+      expect(outputs.some((v) => v)).toBe(true);
+      expect(outputs.some((v) => !v)).toBe(true);
+    }
+  });
 });
