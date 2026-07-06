@@ -35,6 +35,12 @@
           Circu<span class="wordmark-led" aria-hidden="true">i</span>tle
         </h1>
         <div class="header-controls">
+          <a
+            class="header-link"
+            href="https://github.com/ctkrug/circuitle"
+            target="_blank"
+            rel="noopener"
+          >GitHub</a>
           <span id="best-score" class="best-score muted" aria-live="polite"></span>
           <button id="mute-toggle" class="icon-button" type="button" aria-label="Mute sound" aria-pressed="false">
             🔊
@@ -76,6 +82,75 @@
       </div>
       <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     </div>
+    <section class="about" aria-label="About Circuitle">
+      <div class="about-inner">
+        <h2>A daily logic-gate puzzle</h2>
+        <p>
+          Circuitle is a browser puzzle about digital logic. Each day it
+          generates one truth table, a small boolean function of three
+          inputs, and asks you to build a circuit that matches every row.
+          You wire logic gates (AND, OR, NOT, XOR, NAND, NOR, XNOR) from the
+          inputs to a single output, and the board simulates your circuit
+          live against the target. The catch is efficiency: any working
+          circuit solves the puzzle, but your score is the number of gates
+          you used, measured against par, the smallest number of gates the
+          function actually needs. Getting a solution is the warm-up.
+          Getting the minimal one is the game.
+        </p>
+        <h3>How to play</h3>
+        <p>
+          Read the day's target truth table, drag gates onto the board (or
+          place them from the keyboard), and connect pins by clicking a
+          source pin then a target pin. Rows turn green as your circuit
+          starts matching them. When every row passes you win, and Circuitle
+          shows your gate count next to par along with a share line you can
+          copy. The same puzzle appears for everyone on a given UTC date, so
+          a score is worth comparing. Nothing is stored on a server; your
+          best gate count per day lives in your browser.
+        </p>
+        <h3>FAQ</h3>
+        <dl class="faq">
+          <dt>Do I need to know electronics to play?</dt>
+          <dd>
+            Basic familiarity with logic gates helps, but the truth table
+            tells you exactly what each combination of inputs should
+            produce, so you can reason it out from the table alone. If you
+            know that AND is true only when both inputs are true, you know
+            enough to start.
+          </dd>
+          <dt>What is par, and how is it calculated?</dt>
+          <dd>
+            Par is the fewest gates any circuit could use to reproduce that
+            day's truth table. Circuitle computes it with a shortest-path
+            search over the function's possible sub-signals, so it is a real
+            lower bound, not an estimate. Beating par means you found a
+            smaller circuit than the reference solution.
+          </dd>
+          <dt>Is the puzzle the same for everyone?</dt>
+          <dd>
+            Yes. The day's truth table is seeded from the UTC date, so every
+            player on the same day faces the identical function. That is what
+            makes sharing a gate count meaningful.
+          </dd>
+          <dt>Can I play with only the keyboard?</dt>
+          <dd>
+            Yes. Placing a gate, wiring two pins, and deleting a gate all
+            have keyboard equivalents, and the board announces the pin you
+            are on for screen readers.
+          </dd>
+          <dt>Does it work on my phone?</dt>
+          <dd>
+            Yes. The board resizes to your screen and gates are drag-and-drop
+            on touch, with the truth table and gate dock laid out for narrow
+            widths.
+          </dd>
+        </dl>
+      </div>
+    </section>
+    <footer class="site-footer">
+      <a class="cta" href="https://github.com/ctkrug/circuitle" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="portfolio-link" href="https://apps.charliekrug.com">More by Charlie Krug → apps.charliekrug.com</a>
+    </footer>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>

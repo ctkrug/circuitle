@@ -411,6 +411,118 @@ table.truth-table tbody tr.row-fail td:last-child {
   display: none;
 }
 
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  color: var(--accent-support);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-control);
+  transition: box-shadow var(--duration-ui) var(--ease-out);
+}
+
+.header-link:hover {
+  box-shadow: var(--glow-support);
+}
+
+.header-link:focus-visible {
+  outline: 2px solid var(--accent-support);
+  outline-offset: 2px;
+}
+
+.about {
+  border-top: 1px solid var(--surface-2);
+  padding: var(--space-6) var(--space-3);
+}
+
+.about-inner {
+  max-width: 68ch;
+  margin: 0 auto;
+}
+
+.about h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin: 0 0 var(--space-2);
+}
+
+.about h3 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--accent-support);
+  margin: var(--space-4) 0 var(--space-1);
+}
+
+.about p {
+  color: var(--text-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.faq {
+  margin: 0;
+}
+
+.faq dt {
+  color: var(--text);
+  font-weight: 600;
+  margin-top: var(--space-3);
+}
+
+.faq dd {
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-3) var(--space-6);
+  border-top: 1px solid var(--surface-2);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-control);
+  transition: box-shadow var(--duration-ui) var(--ease-out), transform var(--duration-feedback) var(--ease-out);
+}
+
+.cta:hover {
+  box-shadow: var(--glow-support);
+}
+
+.cta:active {
+  transform: scale(0.97);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--accent-support);
+  outline-offset: 2px;
+}
+
+.portfolio-link {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.portfolio-link:hover {
+  color: var(--accent-support);
+}
+
 @media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr;
