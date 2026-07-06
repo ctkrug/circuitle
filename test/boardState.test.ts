@@ -122,6 +122,19 @@ describe("disconnect", () => {
     expect(state.gates[0]?.inputs[0]).toBeNull();
   });
 
+  it("leaves other gates' inputs untouched", () => {
+    let state = createBoardState(["A", "B"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    state = placeGate(state, "g2", "NOT", { x: 100, y: 0 });
+    state = connect(state, { kind: "input", name: "A" }, { kind: "gateInput", gateId: "g1", inputIndex: 0 }).state;
+    state = connect(state, { kind: "input", name: "B" }, { kind: "gateInput", gateId: "g2", inputIndex: 0 }).state;
+
+    state = disconnect(state, { kind: "gateInput", gateId: "g1", inputIndex: 0 });
+
+    expect(state.gates.find((g) => g.id === "g1")?.inputs[0]).toBeNull();
+    expect(state.gates.find((g) => g.id === "g2")?.inputs[0]).toEqual({ kind: "input", name: "B" });
+  });
+
   it("clears the circuit output sink", () => {
     let state = createBoardState(["A"]);
     state = connect(state, { kind: "input", name: "A" }, { kind: "output" }).state;
