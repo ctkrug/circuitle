@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { buildTruthTable, dailyTruthTable, enumerateInputs, todayIsoDate } from "../src/truthTable";
 
@@ -56,6 +57,21 @@ describe("dailyTruthTable", () => {
       expect(outputs.some((v) => v)).toBe(true);
       expect(outputs.some((v) => !v)).toBe(true);
     }
+  });
+
+  it("never throws or picks a degenerate output for any date string, including hostile input", () => {
+    fc.assert(
+      fc.property(fc.string({ maxLength: 500 }), (date) => {
+        const table = dailyTruthTable(date);
+        const outputs = table.rows.map((r) => r.output);
+        const hasTrue = outputs.some((v) => v);
+        const hasFalse = outputs.some((v) => !v);
+        const isCopyOfSomeInput = table.inputNames.some((_, varIndex) =>
+          table.rows.every((row) => row.output === row.inputs[varIndex]),
+        );
+        return hasTrue && hasFalse && !isCopyOfSomeInput;
+      }),
+    );
   });
 });
 
