@@ -1,0 +1,122 @@
+import { describe, expect, it } from "vitest";
+import { createBoardState, placeGate } from "../src/boardState";
+import {
+  DEFAULT_GATE_LAYOUT,
+  gateBounds,
+  gateInputPinPosition,
+  gateOutputPinPosition,
+  hitTestGateBody,
+  hitTestPin,
+  inputPinPosition,
+  outputSinkPosition,
+} from "../src/layout";
+
+describe("gateBounds", () => {
+  it("scales grid position and size by the grid spacing", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "AND", { x: 2, y: 1 });
+    const bounds = gateBounds(state.gates[0]!);
+    expect(bounds).toEqual({ x: 48, y: 24, width: 96, height: 72 });
+  });
+});
+
+describe("gateInputPinPosition", () => {
+  it("centers a unary gate's single input on the left edge", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    const pos = gateInputPinPosition(state.gates[0]!, 0);
+    expect(pos).toEqual({ x: 0, y: 36 });
+  });
+
+  it("spreads a binary gate's two inputs top and bottom on the left edge", () => {
+    let state = createBoardState(["A", "B"]);
+    state = placeGate(state, "g1", "AND", { x: 0, y: 0 });
+    const gate = state.gates[0]!;
+    expect(gateInputPinPosition(gate, 0)).toEqual({ x: 0, y: 18 });
+    expect(gateInputPinPosition(gate, 1)).toEqual({ x: 0, y: 54 });
+  });
+});
+
+describe("gateOutputPinPosition", () => {
+  it("sits at the vertical center of the right edge", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 1, y: 2 });
+    expect(gateOutputPinPosition(state.gates[0]!)).toEqual({ x: 24 + 96, y: 48 + 36 });
+  });
+});
+
+describe("inputPinPosition / outputSinkPosition", () => {
+  it("spaces circuit inputs evenly down the left edge", () => {
+    expect(inputPinPosition(0, 3, 400)).toEqual({ x: 0, y: 100 });
+    expect(inputPinPosition(1, 3, 400)).toEqual({ x: 0, y: 200 });
+    expect(inputPinPosition(2, 3, 400)).toEqual({ x: 0, y: 300 });
+  });
+
+  it("puts the output sink at the vertical center of the right edge", () => {
+    expect(outputSinkPosition(600, 400)).toEqual({ x: 600, y: 200 });
+  });
+});
+
+describe("hitTestPin", () => {
+  it("finds a circuit input pin within hit range", () => {
+    const state = createBoardState(["A", "B"]);
+    const hit = hitTestPin(state, { x: 1, y: 133 }, 600, 400);
+    expect(hit).toEqual({ kind: "input", name: "A" });
+  });
+
+  it("finds the output sink within hit range", () => {
+    const state = createBoardState(["A"]);
+    const hit = hitTestPin(state, { x: 598, y: 200 }, 600, 400);
+    expect(hit).toEqual({ kind: "output" });
+  });
+
+  it("finds a gate's output pin", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    const outPos = gateOutputPinPosition(state.gates[0]!);
+    const hit = hitTestPin(state, outPos, 600, 400);
+    expect(hit).toEqual({ kind: "gateOutput", gateId: "g1" });
+  });
+
+  it("finds a gate's specific input pin among several", () => {
+    let state = createBoardState(["A", "B"]);
+    state = placeGate(state, "g1", "AND", { x: 0, y: 0 });
+    const secondInput = gateInputPinPosition(state.gates[0]!, 1);
+    const hit = hitTestPin(state, secondInput, 600, 400);
+    expect(hit).toEqual({ kind: "gateInput", gateId: "g1", inputIndex: 1 });
+  });
+
+  it("returns null when no pin is near the point", () => {
+    const state = createBoardState(["A"]);
+    expect(hitTestPin(state, { x: 300, y: 300 }, 600, 400)).toBeNull();
+  });
+
+  it("respects the configured hit radius boundary", () => {
+    const state = createBoardState(["A"]);
+    const tightLayout = { ...DEFAULT_GATE_LAYOUT, pinHitRadius: 2 };
+    // the input pin for a single input at index 0 sits at (0, 200) on a 400-tall canvas
+    expect(hitTestPin(state, { x: 0, y: 205 }, 600, 400, tightLayout)).toBeNull();
+    expect(hitTestPin(state, { x: 0, y: 201 }, 600, 400, tightLayout)).toEqual({ kind: "input", name: "A" });
+  });
+});
+
+describe("hitTestGateBody", () => {
+  it("finds a gate whose body contains the point", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    expect(hitTestGateBody(state, { x: 10, y: 10 })).toBe("g1");
+  });
+
+  it("returns null for a point outside every gate", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    expect(hitTestGateBody(state, { x: 1000, y: 1000 })).toBeNull();
+  });
+
+  it("prefers the last-placed (topmost) gate when bodies overlap", () => {
+    let state = createBoardState(["A"]);
+    state = placeGate(state, "g1", "NOT", { x: 0, y: 0 });
+    state = placeGate(state, "g2", "NOT", { x: 0, y: 0 });
+    expect(hitTestGateBody(state, { x: 10, y: 10 })).toBe("g2");
+  });
+});
